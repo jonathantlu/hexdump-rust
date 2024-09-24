@@ -24,7 +24,9 @@ fn main() {
                 // check if length exists, and if it is valid
                 if i < args.len() {
                     len = Some(args[i].parse().unwrap_or_else(|error| {
-                        panic!("Invalid length: {}", args[i]);
+                        eprintln!("Invalid length: {}", args[i]);
+                        print_usage_and_exit(program_name);
+                        0  // will not be reached
                     }));
                 } else {
                     print_usage_and_exit(program_name);
@@ -34,6 +36,7 @@ fn main() {
                 if file_path.is_none() {
                     file_path = Some(args[i].clone());
                 } else {
+                    // only one file path should be specified
                     print_usage_and_exit(program_name);
                 }
             }
@@ -41,5 +44,9 @@ fn main() {
         i += 1
     }
 
+    // make sure there was a filename in the input
+    if file_path.is_none() {
+        print_usage_and_exit(program_name);
+    }
 
 }
