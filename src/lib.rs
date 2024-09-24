@@ -4,46 +4,60 @@ use std::io::{BufReader, Read};
 
 const BYTES_PER_LINE: usize = 16;
 
+// main application code
 pub fn run(args: Args) -> Result<(), Box<dyn Error>> {
+    // attempt to open the file
     let file = File::open(args.file_path)?;
     
+    // if a len has been specified, use it
     if let Some(n) = args.len {
-        read_convert_print(file.take(n))?;
+        read_convert_print(file.take(n))?
     } else {
-        read_convert_print(file)?;
+        read_convert_print(file)?
     }
-
-    Ok(())
 }
 
-fn read_convert_print<R: Read>(file: R) -> Result<(), Box<dyn Error>>{
+// function that accepts any type that implements Read
+// because file and file.take have different types, I implemented it like this
+// this allows me to only need to write the following code once
+fn read_convert_print<R: Read>(file: R) -> Result<(), Box<dyn Error>> {
+    // use BufReader as we will need to read many times
     let mut reader = BufReader::new(file);
     let mut buf: [u8; BYTES_PER_LINE] = [0; BYTES_PER_LINE];
     
     let mut offset = 0usize;
+    // read BYTES_PER_LINE bytes from the file
     let mut n = reader.read(&mut buf)?;
+    // need to keep reading until 0 is returned, meaning EOF is reached
     while n != 0 {
+        // for each set of bytes read, convert to hex and print
         print_hexdump_line(&buf, n, offset);
         offset += n;
         n = reader.read(&mut buf)?;
     }
 
+    // print final offset
     println!("{:08x}", offset);
 
     Ok(())
 }
 
+// takes a buf array, converts it to hex, and prints it
 fn print_hexdump_line(buf: &[u8], n: usize, offset: usize) {
     let mut line = Vec::new();
     line.push(format!("{:08x}", offset));
 
+    // each print seperated number is 4 digits long, so 2 bytes
     for i in (0..BYTES_PER_LINE).step_by(2) {
         if i + 1 < n {
+            // prints in little endian
+            // TODO: add a flag to force big endian
             let in_hex = (buf[i + 1] as u16) << 8 | buf[i] as u16;
             line.push(format!("{in_hex:04x}"));
         } else if i < n {
             line.push(format!("{:04x}", buf[i]));
         } else {
+            // the final line has extra spaces to match the other lines
             line.push(String::from("    "));
         }
     }
