@@ -88,19 +88,20 @@ impl Args {
         while let Some(arg) = args.next() {
             match arg.as_str() {
                 "-n" => {
-                    len = match args.next() {
-                        Some(s) => match s.parse() {
-                            Ok(len) => Some(len),
-                            _ => {
-                                return Err(format!("Invalid length: {}\n{}",
-                                                   s,
-                                                   Self::usage_message(&program_name)));
-                            }
-                        }
+                    let next_arg = match args.next() {
+                        Some(s) => s,
                         _ => {
                             return Err(Self::usage_message(&program_name));
                         }
-                    }
+                    };
+                    len = match next_arg.parse() {
+                        Ok(len) => Some(len),
+                        _ => {
+                            return Err(format!("Invalid length: {}\n{}",
+                                               next_arg,
+                                               Self::usage_message(&program_name)));
+                        }
+                    };
                 }
                 _ => {
                     if file_path.is_none() {
