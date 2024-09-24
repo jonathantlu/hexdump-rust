@@ -16,9 +16,8 @@ pub fn run(args: &Args) -> io::Result<()> {
 }
 
 // function that accepts any type that implements Read
-// because file and file.take have different types, I implemented it like this
-// this allows me to only need to write the following code once
-fn read_convert_print<R: Read>(file: R) -> io::Result<()> {
+// because file and file.take have different types, but both impl Read
+fn read_convert_print(file: impl Read) -> io::Result<()> {
     // use BufReader as we will need to read many times
     let mut reader = BufReader::new(file);
     let mut buf: [u8; BYTES_PER_LINE] = [0; BYTES_PER_LINE];
@@ -29,26 +28,25 @@ fn read_convert_print<R: Read>(file: R) -> io::Result<()> {
     // need to keep reading until 0 is returned, meaning EOF is reached
     while n != 0 {
         // for each set of bytes read, convert to hex and print
-        print_hexdump_line(&buf, n, offset);
+        println!("{offset:08x} {}", convert_to_hexdump_line(&buf, n));
         offset += n;
         n = reader.read(&mut buf)?;
     }
 
     // print final offset
-    println!("{:08x}", offset);
+    println!("{offset:08x}");
 
     Ok(())
 }
 
-// takes a buf array, converts it to hex, and prints it
-fn print_hexdump_line(buf: &[u8], n: usize, offset: usize) {
+// takes a buf array of size n, converts it to hex string
+fn convert_to_hexdump_line(buf: &[u8], n: usize) -> String {
     let mut line = Vec::new();
-    line.push(format!("{:08x}", offset));
 
-    // each print seperated number is 4 digits long, so 2 bytes
+    // each seperated number is 4 digits long, so 2 bytes each
     for i in (0..BYTES_PER_LINE).step_by(2) {
         if i + 1 < n {
-            // prints in little endian
+            // builds in little endian
             // TODO: add a flag to force big endian
             let in_hex = (buf[i + 1] as u16) << 8 | buf[i] as u16;
             line.push(format!("{in_hex:04x}"));
@@ -60,7 +58,7 @@ fn print_hexdump_line(buf: &[u8], n: usize, offset: usize) {
         }
     }
 
-    println!("{}", line.join(" "));
+    line.join(" ")
 }
 
 pub struct Args {
@@ -122,10 +120,12 @@ impl Args {
         Ok(Args { program_name: String::from(name), len, file_path })
     }
 
+    // getter for file name
     pub fn file_path(&self) -> &str {
         self.file_path.as_str()
     }
 
+    // getter for program_name
     pub fn program_name(&self) -> &str {
         self.program_name.as_str()
     }
