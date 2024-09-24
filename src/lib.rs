@@ -1,26 +1,24 @@
-use std::error::Error;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::{self, BufReader, Read};
 
 const BYTES_PER_LINE: usize = 16;
 
 // main application code
-pub fn run(args: Args) -> Result<(), Box<dyn Error>> {
+pub fn run(args: &Args) -> io::Result<()> {
     // attempt to open the file
-    let file = File::open(args.file_path)?;
+    let file = File::open(args.file_path.as_str())?;
     
     // if a len has been specified, use it
     if let Some(n) = args.len {
-        read_convert_print(file.take(n))?
-    } else {
-        read_convert_print(file)?
+        return read_convert_print(file.take(n));
     }
+    read_convert_print(file)
 }
 
 // function that accepts any type that implements Read
 // because file and file.take have different types, I implemented it like this
 // this allows me to only need to write the following code once
-fn read_convert_print<R: Read>(file: R) -> Result<(), Box<dyn Error>> {
+fn read_convert_print<R: Read>(file: R) -> io::Result<()> {
     // use BufReader as we will need to read many times
     let mut reader = BufReader::new(file);
     let mut buf: [u8; BYTES_PER_LINE] = [0; BYTES_PER_LINE];
@@ -66,6 +64,7 @@ fn print_hexdump_line(buf: &[u8], n: usize, offset: usize) {
 }
 
 pub struct Args {
+    program_name: String,
     len: Option<u64>,
     file_path: String,
 }
@@ -120,10 +119,19 @@ impl Args {
             }
         };
 
-        Ok(Args { len, file_path })
+        Ok(Args { program_name: String::from(name), len, file_path })
+    }
+
+    pub fn file_path(&self) -> &str {
+        self.file_path.as_str()
+    }
+
+    pub fn program_name(&self) -> &str {
+        self.program_name.as_str()
     }
 }
 
+// testing code
 #[cfg(test)]
 mod tests {
     use super::*;
