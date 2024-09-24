@@ -5,11 +5,8 @@ use std::io::ErrorKind;
 use hexdump::Args;
 
 fn main() {
-    // Read in command line arguments
-    let args: Vec<String> = env::args().collect();
-
     // parse the command line arguments
-    let args = Args::parse(&args).unwrap_or_else(|e| {
+    let args = Args::parse(env::args()).unwrap_or_else(|e| {
         eprintln!("{e}");
         process::exit(1);
     });
