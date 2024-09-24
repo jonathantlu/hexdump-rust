@@ -1,14 +1,58 @@
 use std::error::Error;
-use std::fs;
+use std::fs::File;
+use std::io::{BufReader, Read};
+
+const BYTES_PER_LINE: usize = 16;
 
 pub fn run(args: Args) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(args.file_path)?;
+    let file = File::open(args.file_path)?;
+    
+    if let Some(n) = args.len {
+        read_convert_print(file.take(n))?;
+    } else {
+        read_convert_print(file)?;
+    }
 
     Ok(())
 }
 
+fn read_convert_print<R: Read>(file: R) -> Result<(), Box<dyn Error>>{
+    let mut reader = BufReader::new(file);
+    let mut buf: [u8; BYTES_PER_LINE] = [0; BYTES_PER_LINE];
+    
+    let mut offset = 0usize;
+    let mut n = reader.read(&mut buf)?;
+    while n != 0 {
+        print_hexdump_line(&buf, n, offset);
+        offset += n;
+        n = reader.read(&mut buf)?;
+    }
+
+    println!("{:08x}", offset);
+
+    Ok(())
+}
+
+fn print_hexdump_line(buf: &[u8], n: usize, offset: usize) {
+    let mut line = Vec::new();
+    line.push(format!("{:08x}", offset));
+
+    for i in (0..BYTES_PER_LINE).step_by(2) {
+        if i + 1 < n {
+            let in_hex = (buf[i + 1] as u16) << 8 | buf[i] as u16;
+            line.push(format!("{in_hex:04x}"));
+        } else if i < n {
+            line.push(format!("{:04x}", buf[i]));
+        } else {
+            line.push(String::from("    "));
+        }
+    }
+
+    println!("{}", line.join(" "));
+}
+
 pub struct Args {
-    len: Option<usize>,
+    len: Option<u64>,
     file_path: String,
 }
 
@@ -19,7 +63,7 @@ impl Args {
 
     pub fn parse(args: &[String]) -> Result<Args, String> {
         let name = &args[0];
-        let mut len: Option<usize> = None;
+        let mut len: Option<u64> = None;
         let mut file_path: Option<String> = None;
 
         // loop through command line arguments to check for optional flags
