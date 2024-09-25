@@ -40,7 +40,7 @@ fn read_convert_print(file: impl Read) -> io::Result<()> {
 }
 
 // takes a buf array of size n, converts it to hex string
-fn convert_to_hexdump_line(buf: &[u8], n: usize) -> String {
+pub fn convert_to_hexdump_line(buf: &[u8], n: usize) -> String {
     let mut line = Vec::new();
 
     // each seperated number is 4 digits long, so 2 bytes each
@@ -130,5 +130,42 @@ impl Args {
     // getter for program_name
     pub fn program_name(&self) -> &str {
         self.program_name.as_str()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn basic_hex() {
+        let input = [0xffu8; BYTES_PER_LINE];
+        let n = 16usize;
+        let result = String::from("ffff ffff ffff ffff ffff ffff ffff ffff");
+        assert_eq!(result, convert_to_hexdump_line(&input, n));
+    }
+
+    #[test]
+    fn hex_convert1() {
+        let input = [0xffu8; BYTES_PER_LINE];
+        let n = 5usize;
+        let result = String::from("ffff ffff 00ff                         ");
+        assert_eq!(result, convert_to_hexdump_line(&input, n));
+    }
+
+    #[test]
+    fn hex_with_0_len() {
+        let input = [0xffu8; BYTES_PER_LINE];
+        let n = 0usize;
+        let result = String::from("                                       ");
+        assert_eq!(result, convert_to_hexdump_line(&input, n));
+    }
+
+    #[test]
+    fn little_endian_hex() {
+        let input = [0xaau8, 0xbb, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let n = 16usize;
+        let result = String::from("bbaa 0000 0000 0000 0000 0000 0000 0000");
+        assert_eq!(result, convert_to_hexdump_line(&input, n));
     }
 }
