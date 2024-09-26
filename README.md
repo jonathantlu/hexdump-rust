@@ -1,5 +1,6 @@
 # hexdump
-Simple Rust implementation of the hexdump utility.\ This utility only prints in little endian of a word size of 4 bytes.
+Simple Rust implementation of the hexdump utility.\
+This utility only prints in little endian of a word size of 4 bytes.\
 Usage: ``./hexdump [-n LEN] FILE``\
 Supported Flags:
 - ``-n LEN``: prints up to n bytes in hexadecimal
